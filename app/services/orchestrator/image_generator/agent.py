@@ -11,7 +11,7 @@ from strands import Agent, tool
 from strands.models import BedrockModel
 
 from .tools import ImageGeneratorTools
-from agent.utils.secrets import get_config
+from app.services.utils.secrets import get_config
 
 # 설정 로드
 config = get_config()

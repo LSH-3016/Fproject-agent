@@ -8,7 +8,7 @@ from strands_tools import retrieve
 
 # Secrets Manager에서 설정 가져오기
 try:
-    from agent.utils.secrets import get_config
+    from app.services.utils.secrets import get_config
     config = get_config()
     
     # KNOWLEDGE_BASE_ID는 필수값
