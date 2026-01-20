@@ -16,7 +16,7 @@ from .tools import (
     create_report as _create_report,
     check_report_status as _check_report_status
 )
-from agent.utils.secrets import get_config
+from app.services.utils.secrets import get_config
 
 # 설정 로드
 config = get_config()

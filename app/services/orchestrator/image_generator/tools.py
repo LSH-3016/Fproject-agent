@@ -15,7 +15,7 @@ from datetime import datetime
 
 import boto3
 
-from agent.utils.secrets import get_config
+from app.services.utils.secrets import get_config
 
 logger = logging.getLogger(__name__)
 
