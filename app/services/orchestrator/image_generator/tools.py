@@ -195,9 +195,38 @@ def generate_image_with_nova(positive_prompt: str, negative_prompt: str = None) 
         return {"success": False, "error": str(e)}
 
 
+def delete_existing_images(user_id: str, year: str, month: str, day: str) -> int:
+    """
+    해당 날짜의 기존 이미지들을 삭제
+    """
+    client = get_s3_client()
+    prefix = f"{user_id}/history/{year}/{month}/{day}/"
+    deleted_count = 0
+    
+    try:
+        # 해당 경로의 모든 이미지 파일 조회
+        response = client.list_objects_v2(
+            Bucket=S3_BUCKET,
+            Prefix=prefix
+        )
+        
+        if 'Contents' in response:
+            for obj in response['Contents']:
+                key = obj['Key']
+                if key.endswith('.png') or key.endswith('.jpg') or key.endswith('.jpeg'):
+                    client.delete_object(Bucket=S3_BUCKET, Key=key)
+                    logger.info(f"[S3] Deleted existing image: {key}")
+                    deleted_count += 1
+        
+        return deleted_count
+    except Exception as e:
+        logger.error(f"[S3] Error deleting existing images: {e}")
+        return 0
+
+
 def upload_to_s3(user_id: str, image_base64: str, record_date: str = None) -> Dict[str, str]:
     """
-    S3에 이미지 업로드
+    S3에 이미지 업로드 (기존 이미지 삭제 후 업로드)
     경로: {user_id}/history/{년}/{월}/{일}/image_{timestamp}.png
     """
     client = get_s3_client()
@@ -215,6 +244,11 @@ def upload_to_s3(user_id: str, image_base64: str, record_date: str = None) -> Di
     month = dt.strftime("%m")
     day = dt.strftime("%d")
     timestamp = int(time.time() * 1000)
+    
+    # 기존 이미지 삭제
+    deleted = delete_existing_images(user_id, year, month, day)
+    if deleted > 0:
+        logger.info(f"[S3] Deleted {deleted} existing image(s) for {year}/{month}/{day}")
     
     s3_key = f"{user_id}/history/{year}/{month}/{day}/image_{timestamp}.png"
     
