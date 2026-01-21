@@ -11,10 +11,10 @@ router = APIRouter()
 @router.post("")
 async def generate_image(request: Request):
     """
-    이미지 생성 엔드포인트 - Image Generator Agent 호출
+    이미지 생성 엔드포인트 - Agent 우회하고 Tools 직접 호출
     """
     try:
-        from app.services.orchestrator.image_generator.agent import run_image_generator
+        from app.services.orchestrator.image_generator.tools import ImageGeneratorTools
         
         body = await request.json()
         
@@ -27,13 +27,56 @@ async def generate_image(request: Request):
         image_base64 = body.get('image_base64')
         record_date = body.get('record_date')
         
-        # Agent에게 명확한 요청 전달
+        tools = ImageGeneratorTools()
+        
+        # 1. 이미지 생성 (미리보기)
         if action == 'generate':
-            request_text = f"일기 텍스트로 이미지를 생성해주세요."
+            if not text:
+                return JSONResponse(
+                    status_code=400,
+                    content={
+                        "success": False,
+                        "error": "text가 필요합니다."
+                    }
+                )
+            
+            result = await tools.generate_image_from_text(text)
+            print(f"[DEBUG] Image generated: {result.get('success')}")
+            print(f"[DEBUG] ========== Image Generation 완료 ==========")
+            return JSONResponse(content=result)
+        
+        # 2. S3 업로드
         elif action == 'upload':
-            request_text = f"이미지를 S3에 업로드해주세요."
+            if not user_id or not image_base64:
+                return JSONResponse(
+                    status_code=400,
+                    content={
+                        "success": False,
+                        "error": "user_id와 image_base64가 필요합니다."
+                    }
+                )
+            
+            result = await tools.upload_image_to_s3(user_id, image_base64, record_date)
+            print(f"[DEBUG] Image uploaded: {result.get('success')}")
+            print(f"[DEBUG] ========== Image Upload 완료 ==========")
+            return JSONResponse(content=result)
+        
+        # 3. 프롬프트만 생성
         elif action == 'prompt':
-            request_text = f"일기 텍스트를 이미지 프롬프트로 변환해주세요."
+            if not text:
+                return JSONResponse(
+                    status_code=400,
+                    content={
+                        "success": False,
+                        "error": "text가 필요합니다."
+                    }
+                )
+            
+            result = await tools.build_prompt_from_text(text)
+            print(f"[DEBUG] Prompt generated: {result.get('success')}")
+            print(f"[DEBUG] ========== Prompt Generation 완료 ==========")
+            return JSONResponse(content=result)
+        
         else:
             return JSONResponse(
                 status_code=400,
@@ -42,18 +85,6 @@ async def generate_image(request: Request):
                     "error": f"알 수 없는 action: {action}"
                 }
             )
-        
-        result = run_image_generator(
-            request=request_text,
-            user_id=user_id,
-            text=text,
-            image_base64=image_base64,
-            record_date=record_date
-        )
-        
-        print(f"[DEBUG] Agent result: {json.dumps(result, ensure_ascii=False)[:200]}...")
-        print(f"[DEBUG] ========== Image Generation 완료 ==========")
-        return JSONResponse(content=result)
         
     except Exception as e:
         print(f"[ERROR] Image generation failed: {str(e)}")
