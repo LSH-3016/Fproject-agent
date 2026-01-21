@@ -29,7 +29,7 @@ spec:
     spec:
       containers:
         - name: agent-api
-          image: 324547056370.dkr.ecr.us-east-1.amazonaws.com/diary-orchestrator-agent:a4e8132ad33a5a6be26463e9afed71191dd7ba1e
+          image: 324547056370.dkr.ecr.us-east-1.amazonaws.com/diary-orchestrator-agent:44a536bc9098c7c4c28bf7d5d154e5eef7701fb8
           ports:
             - containerPort: 8000
           env:
