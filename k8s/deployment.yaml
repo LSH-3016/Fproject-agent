@@ -53,7 +53,7 @@ spec:
             - name: SECRET_NAME
               value: "agent-secret"
             - name: ALLOWED_ORIGINS
-              value: "https://www.aws11.shop,https://aws11.shop,https://api.aws11.shop"
+              value: "https://www.aws11.shop,https://aws11.shop,https://web.aws11.shop,https://api.aws11.shop"
             - name: DEBUG
               value: "False"
           resources:
