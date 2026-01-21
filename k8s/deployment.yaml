@@ -1,4 +1,12 @@
 apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: diary-agent-sa
+  namespace: default
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::324547056370:role/DiaryOrchestratorAgentRole
+---
+apiVersion: v1
 kind: Service
 metadata:
   name: agent-api-service
@@ -27,9 +35,12 @@ spec:
       labels:
         app: agent-api
     spec:
+      serviceAccountName: diary-agent-sa
+      nodeSelector:
+        karpenter.sh/nodepool: default
       containers:
         - name: agent-api
-          image: 324547056370.dkr.ecr.us-east-1.amazonaws.com/diary-orchestrator-agent:06c650a5497bae0318c1b2991df1686ffc4ef03e
+          image: 324547056370.dkr.ecr.ap-northeast-2.amazonaws.com/diary-orchestrator-agent:latest
           ports:
             - containerPort: 8000
           env:
@@ -38,7 +49,9 @@ spec:
             - name: HOST
               value: "0.0.0.0"
             - name: AWS_REGION
-              value: "us-east-1"
+              value: "ap-northeast-2"
+            - name: SECRET_NAME
+              value: "agent-secret"
             - name: ALLOWED_ORIGINS
               value: "https://www.aws11.shop,https://aws11.shop,https://api.aws11.shop"
             - name: DEBUG

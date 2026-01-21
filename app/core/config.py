@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     VERSION: str = "1.0.0"
     HOST: str = "0.0.0.0"
     PORT: int = 8000
-    AWS_REGION: str = "us-east-1"
+    AWS_REGION: str = "ap-northeast-2"
     ALLOWED_ORIGINS: str = "http://localhost:3000"
     DEBUG: bool = False
     
