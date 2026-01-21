@@ -41,9 +41,20 @@ async def generate_image(request: Request):
                 )
             
             result = await tools.generate_image_from_text(text)
-            print(f"[DEBUG] Image generated: {result.get('success')}")
+            
+            # 프론트엔드 형식에 맞게 변환 (snake_case → camelCase)
+            if result.get('success') and 'image_base64' in result:
+                response = {
+                    "success": True,
+                    "imageBase64": result['image_base64'],
+                    "prompt": result.get('prompt', {})
+                }
+            else:
+                response = result
+            
+            print(f"[DEBUG] Image generated: {response.get('success')}")
             print(f"[DEBUG] ========== Image Generation 완료 ==========")
-            return JSONResponse(content=result)
+            return JSONResponse(content=response)
         
         # 2. S3 업로드
         elif action == 'upload':
@@ -57,9 +68,21 @@ async def generate_image(request: Request):
                 )
             
             result = await tools.upload_image_to_s3(user_id, image_base64, record_date)
-            print(f"[DEBUG] Image uploaded: {result.get('success')}")
+            
+            # 프론트엔드 형식에 맞게 변환
+            if result.get('success'):
+                response = {
+                    "success": True,
+                    "userId": result.get('user_id'),
+                    "s3Key": result.get('s3_key'),
+                    "imageUrl": result.get('image_url')
+                }
+            else:
+                response = result
+            
+            print(f"[DEBUG] Image uploaded: {response.get('success')}")
             print(f"[DEBUG] ========== Image Upload 완료 ==========")
-            return JSONResponse(content=result)
+            return JSONResponse(content=response)
         
         # 3. 프롬프트만 생성
         elif action == 'prompt':
@@ -73,9 +96,20 @@ async def generate_image(request: Request):
                 )
             
             result = await tools.build_prompt_from_text(text)
-            print(f"[DEBUG] Prompt generated: {result.get('success')}")
+            
+            # 프론트엔드 형식에 맞게 변환
+            if result.get('success'):
+                response = {
+                    "success": True,
+                    "positivePrompt": result.get('positive_prompt'),
+                    "negativePrompt": result.get('negative_prompt')
+                }
+            else:
+                response = result
+            
+            print(f"[DEBUG] Prompt generated: {response.get('success')}")
             print(f"[DEBUG] ========== Prompt Generation 완료 ==========")
-            return JSONResponse(content=result)
+            return JSONResponse(content=response)
         
         else:
             return JSONResponse(
