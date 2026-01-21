@@ -173,7 +173,7 @@ def run_image_generator(
         record_date: 기록 날짜 (S3 업로드 시 선택)
     
     Returns:
-        에이전트 실행 결과
+        tool 실행 결과를 그대로 반환 (success, image_base64 등 포함)
     """
     prompt = f"요청: {request}"
     if user_id:
@@ -186,7 +186,21 @@ def run_image_generator(
         prompt += f"\nrecord_date: {record_date}"
     
     try:
+        # Agent 실행
         response = image_generator_agent(prompt)
+        
+        # Agent의 tool_results에서 실제 결과 추출
+        if hasattr(response, 'tool_results') and response.tool_results:
+            # 마지막 tool 결과 반환
+            last_result = response.tool_results[-1]
+            if isinstance(last_result, dict):
+                return last_result
+            elif hasattr(last_result, 'model_dump'):
+                return last_result.model_dump()
+            elif hasattr(last_result, 'dict'):
+                return last_result.dict()
+        
+        # tool_results가 없으면 응답 텍스트 반환
         return {
             "success": True,
             "response": str(response)
