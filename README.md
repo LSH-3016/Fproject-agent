@@ -189,13 +189,20 @@ docs/                  # 문서
 
 ## 환경 변수
 
-```yaml
-AWS_REGION: us-east-1
-KNOWLEDGE_BASE_ID: LOCNRTBMNB
-KNOWLEDGE_BASE_BUCKET: knowledge-base-test-6575574
-BEDROCK_CLAUDE_MODEL_ID: arn:aws:bedrock:...
-BEDROCK_NOVA_CANVAS_MODEL_ID: amazon.nova-canvas-v1:0
+**필수 Secrets Manager 키:**
+```json
+{
+  "BEDROCK_REGION": "ap-northeast-2",
+  "KB_REGION": "ap-northeast-2",
+  "BEDROCK_MODEL_ARN": "arn:aws:bedrock:ap-northeast-2:...:inference-profile/global.anthropic.claude-sonnet-4-5-20250929-v1:0",
+  "BEDROCK_NOVA_CANVAS_MODEL_ID": "amazon.nova-canvas-v1:0",
+  "NOVA_CANVAS_REGION": "us-east-1",
+  "KNOWLEDGE_BASE_ID": "LOCNRTBMNB",
+  "KNOWLEDGE_BASE_BUCKET": "knowledge-base-test-6575574"
+}
 ```
+
+자세한 설정은 [docs/SECRETS_CONFIG.md](./docs/SECRETS_CONFIG.md) 참고
 
 ## 라이선스
 MIT License

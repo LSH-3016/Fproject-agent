@@ -14,18 +14,14 @@ from .question.agent import generate_auto_response
 try:
     from ..utils.secrets import get_config
     config = get_config()
-    BEDROCK_MODEL_ARN = config.get('BEDROCK_MODEL_ARN', '')
+    # Claude 모델 ARN
+    BEDROCK_MODEL_ARN = config.get('BEDROCK_MODEL_ARN')
     if not BEDROCK_MODEL_ARN:
-        # 환경변수에서 시도
-        BEDROCK_MODEL_ARN = os.environ.get('BEDROCK_MODEL_ARN', '')
-    if not BEDROCK_MODEL_ARN:
-        raise ValueError("BEDROCK_MODEL_ARN이 설정되지 않았습니다.")
+        raise ValueError("BEDROCK_MODEL_ARN이 Secrets Manager에 설정되지 않았습니다.")
+    print(f"✅ Orchestrator - Model ARN: {BEDROCK_MODEL_ARN}")
 except Exception as e:
-    print(f"⚠️  설정을 가져올 수 없습니다: {str(e)}")
-    # 환경변수에서 시도
-    BEDROCK_MODEL_ARN = os.environ.get('BEDROCK_MODEL_ARN', '')
-    if not BEDROCK_MODEL_ARN:
-        raise ValueError("BEDROCK_MODEL_ARN이 설정되지 않았습니다. Secrets Manager 또는 환경변수를 확인하세요.")
+    print(f"❌ ERROR: Orchestrator 설정 로드 실패: {str(e)}")
+    raise
 
 # Configure the root strands logger
 logging.getLogger("strands").setLevel(logging.INFO)

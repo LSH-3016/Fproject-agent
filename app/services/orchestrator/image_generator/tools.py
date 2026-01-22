@@ -23,15 +23,25 @@ logger = logging.getLogger(__name__)
 # 설정 로드
 config = get_config()
 
-# Nova Canvas 설정
-NOVA_CANVAS_MODEL_ID = config.get("BEDROCK_NOVA_CANVAS_MODEL_ID", "amazon.nova-canvas-v1:0")
-# Claude 모델 ID
-CLAUDE_MODEL_ID = config.get("BEDROCK_LLM_MODEL_ID", "anthropic.claude-sonnet-4-20250514-v1:0")
+# Nova Canvas 설정 (US 리전 필요)
+NOVA_CANVAS_MODEL_ID = config.get("BEDROCK_NOVA_CANVAS_MODEL_ID")
+if not NOVA_CANVAS_MODEL_ID:
+    raise ValueError("BEDROCK_NOVA_CANVAS_MODEL_ID가 Secrets Manager에 설정되지 않았습니다.")
 
-AWS_REGION = config.get("AWS_REGION", os.getenv("AWS_REGION", "ap-northeast-2"))
+NOVA_CANVAS_REGION = config.get("NOVA_CANVAS_REGION", "us-east-1")
 
-print(f"[ImageGenerator] Using Claude Model: {CLAUDE_MODEL_ID}")
+# Claude 모델 ARN
+CLAUDE_MODEL_ARN = config.get("BEDROCK_MODEL_ARN")
+if not CLAUDE_MODEL_ARN:
+    raise ValueError("BEDROCK_MODEL_ARN이 Secrets Manager에 설정되지 않았습니다.")
+
+# 기본 Bedrock Region
+BEDROCK_REGION = config.get("BEDROCK_REGION", "ap-northeast-2")
+
+print(f"[ImageGenerator] Using Claude Model ARN: {CLAUDE_MODEL_ARN}")
 print(f"[ImageGenerator] Using Nova Canvas Model: {NOVA_CANVAS_MODEL_ID}")
+print(f"[ImageGenerator] Bedrock Region: {BEDROCK_REGION}")
+print(f"[ImageGenerator] Nova Canvas Region: {NOVA_CANVAS_REGION}")
 
 # 이미지 생성 설정
 IMAGE_CONFIG = {
@@ -78,13 +88,23 @@ Keep prompt under 500 characters."""
 # ============================================================================
 
 _bedrock_client = None
+_bedrock_client_us = None
 
 
-def get_bedrock_client():
-    global _bedrock_client
-    if _bedrock_client is None:
-        _bedrock_client = boto3.client("bedrock-runtime", region_name=AWS_REGION)
-    return _bedrock_client
+def get_bedrock_client(region: str = None):
+    """Bedrock 클라이언트 반환 (리전별 캐싱)"""
+    global _bedrock_client, _bedrock_client_us
+    
+    target_region = region or BEDROCK_REGION
+    
+    if target_region == "us-east-1":
+        if _bedrock_client_us is None:
+            _bedrock_client_us = boto3.client("bedrock-runtime", region_name="us-east-1")
+        return _bedrock_client_us
+    else:
+        if _bedrock_client is None:
+            _bedrock_client = boto3.client("bedrock-runtime", region_name=target_region)
+        return _bedrock_client
 
 
 # ============================================================================
@@ -93,7 +113,7 @@ def get_bedrock_client():
 
 def generate_prompt_with_claude(journal_text: str) -> Dict[str, str]:
     """Claude를 사용하여 한글 일기를 영어 프롬프트로 변환"""
-    client = get_bedrock_client()
+    client = get_bedrock_client(BEDROCK_REGION)  # Claude는 기본 리전 사용
     
     request_body = {
         "anthropic_version": "bedrock-2023-05-31",
@@ -109,7 +129,7 @@ def generate_prompt_with_claude(journal_text: str) -> Dict[str, str]:
     
     try:
         response = client.invoke_model(
-            modelId=CLAUDE_MODEL_ID,
+            modelId=CLAUDE_MODEL_ARN,  # ARN 사용
             contentType="application/json",
             accept="application/json",
             body=json.dumps(request_body)
@@ -136,8 +156,8 @@ def generate_prompt_with_claude(journal_text: str) -> Dict[str, str]:
 
 
 def generate_image_with_nova(positive_prompt: str, negative_prompt: str = None) -> Dict[str, Any]:
-    """Nova Canvas로 이미지 생성"""
-    client = get_bedrock_client()
+    """Nova Canvas로 이미지 생성 (US 리전 사용)"""
+    client = get_bedrock_client(NOVA_CANVAS_REGION)  # Nova Canvas는 US 리전
     
     seed = random.randint(0, 2147483647)
     
@@ -157,7 +177,7 @@ def generate_image_with_nova(positive_prompt: str, negative_prompt: str = None) 
     }
     
     try:
-        logger.info(f"[ImageGenerator] Generating image with Nova Canvas (seed: {seed})...")
+        logger.info(f"[ImageGenerator] Generating image with Nova Canvas (seed: {seed}, region: {NOVA_CANVAS_REGION})...")
         
         response = client.invoke_model(
             modelId=NOVA_CANVAS_MODEL_ID,

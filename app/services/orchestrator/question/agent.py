@@ -12,22 +12,28 @@ try:
     config = get_config()
     
     # KNOWLEDGE_BASE_ID는 필수값
-    knowledge_base_id = config.get('KNOWLEDGE_BASE_ID', '').strip()
+    knowledge_base_id = config.get('KNOWLEDGE_BASE_ID')
     if not knowledge_base_id:
-        print("❌ ERROR: KNOWLEDGE_BASE_ID가 비어있습니다!")
-        print("❌ Secrets Manager의 'diary-agent-secret'에 KNOWLEDGE_BASE_ID를 설정해주세요.")
-        # sys.exit 대신 경고만 출력 (런타임 오류 방지)
-        knowledge_base_id = 'MISSING'
+        raise ValueError("KNOWLEDGE_BASE_ID가 Secrets Manager에 설정되지 않았습니다.")
+    
+    # Claude 모델 ARN
+    BEDROCK_MODEL_ARN = config.get('BEDROCK_MODEL_ARN')
+    if not BEDROCK_MODEL_ARN:
+        raise ValueError("BEDROCK_MODEL_ARN이 Secrets Manager에 설정되지 않았습니다.")
+    
+    # Knowledge Base Region (리소스가 있는 리전)
+    KB_REGION = config.get('KB_REGION', 'ap-northeast-2')
     
     os.environ['KNOWLEDGE_BASE_ID'] = knowledge_base_id
-    os.environ['AWS_REGION'] = config.get('AWS_REGION', 'ap-northeast-2')
+    os.environ['AWS_REGION'] = KB_REGION
     
-    print(f"✅ Question Agent - Knowledge Base ID 로드: {knowledge_base_id}")
-    print(f"✅ Question Agent - AWS Region: {os.environ['AWS_REGION']}")
+    print(f"✅ Question Agent - Knowledge Base ID: {knowledge_base_id}")
+    print(f"✅ Question Agent - Model ARN: {BEDROCK_MODEL_ARN}")
+    print(f"✅ Question Agent - KB Region: {KB_REGION}")
     
 except Exception as e:
     print(f"❌ ERROR: Question Agent 설정 로드 실패: {str(e)}")
-    print("❌ 기본값으로 fallback합니다.")
+    raise
     os.environ['KNOWLEDGE_BASE_ID'] = os.environ.get('KNOWLEDGE_BASE_ID', 'MISSING')
     os.environ['AWS_REGION'] = os.environ.get('AWS_REGION', 'ap-northeast-2')
 
@@ -111,6 +117,7 @@ def generate_auto_response(question: str, user_id: str = None, current_date: str
         # Agent 생성 (retrieve tool 포함)
         print(f"[DEBUG] Creating Agent with retrieve tool...")
         auto_response_agent = Agent(
+            model=BEDROCK_MODEL_ARN,
             tools=[retrieve],
             system_prompt=system_prompt,
         )
