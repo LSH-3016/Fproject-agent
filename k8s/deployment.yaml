@@ -56,6 +56,15 @@ spec:
               value: "https://www.aws11.shop,https://aws11.shop,https://web.aws11.shop,https://api.aws11.shop"
             - name: DEBUG
               value: "False"
+            # Phoenix Tracing 설정
+            - name: PHOENIX_ENDPOINT
+              value: "http://phoenix-service:6006"
+            - name: PHOENIX_PROJECT_NAME
+              value: "diary-agent"
+            - name: TRACING_ENABLED
+              value: "true"
+            - name: TRACE_SAMPLE_RATE
+              value: "1.0"
           resources:
             requests:
               memory: "256Mi"

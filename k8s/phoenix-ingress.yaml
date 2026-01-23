@@ -1,0 +1,21 @@
+---
+# Phoenix NLB Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: phoenix-nlb
+  namespace: default
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "external"
+    service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "ip"
+    service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
+spec:
+  type: LoadBalancer
+  selector:
+    app: phoenix
+    component: server
+  ports:
+    - name: ui
+      port: 80
+      targetPort: 6006
+      protocol: TCP
