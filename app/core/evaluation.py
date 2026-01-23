@@ -74,7 +74,7 @@ def run_evaluation(
         
         # 평가용 모델 설정
         aws_region = os.getenv("AWS_REGION", "ap-northeast-2")
-        eval_model = BedrockModel(model_id=config.evaluator_model, region_name=aws_region)
+        eval_model = BedrockModel(model_id=config.evaluator_model, aws_region=aws_region)
         
         # Hallucination 평가
         if config.hallucination_check and reference_text:
