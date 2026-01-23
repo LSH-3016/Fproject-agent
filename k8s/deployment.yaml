@@ -65,6 +65,11 @@ spec:
               value: "true"
             - name: TRACE_SAMPLE_RATE
               value: "1.0"
+            # Phoenix Evaluation 설정
+            - name: EVALUATION_ENABLED
+              value: "true"
+            - name: EVALUATOR_MODEL
+              value: "claude-sonnet-4-5"
           resources:
             requests:
               memory: "256Mi"
