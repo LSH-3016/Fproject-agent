@@ -78,14 +78,16 @@ def init_tracing(config: TracingConfig) -> bool:
         from phoenix.otel import register
         
         # Phoenix에 트레이서 등록 (HTTP /v1/traces 엔드포인트 사용)
+        # endpoint에 /v1/traces 경로 명시
+        phoenix_traces_endpoint = config.phoenix_endpoint.rstrip("/") + "/v1/traces"
         tracer_provider = register(
             project_name=config.project_name,
-            endpoint=config.phoenix_endpoint,
+            endpoint=phoenix_traces_endpoint,
         )
         
         _tracer_provider = tracer_provider
         
-        print(f"✅ Phoenix HTTP endpoint: {config.phoenix_endpoint}")
+        print(f"✅ Phoenix HTTP endpoint: {phoenix_traces_endpoint}")
         
         # Bedrock Instrumentor 활성화
         try:
