@@ -23,6 +23,7 @@ class EvaluationConfig:
     relevance_check: bool = True
     evaluator_model: str = field(default_factory=lambda: os.getenv("EVALUATOR_MODEL", "anthropic.claude-3-haiku-20240307-v1:0"))
     project_name: str = field(default_factory=lambda: os.getenv("PHOENIX_PROJECT_NAME", "diary-agent"))
+    phoenix_base_url: str = field(default_factory=lambda: os.getenv("PHOENIX_BASE_URL", "http://phoenix-service:6006"))
 
 
 @dataclass
@@ -64,14 +65,18 @@ def run_evaluation(
         )
         from phoenix.evals.models import BedrockModel
         from phoenix.trace import SpanEvaluations
-        import phoenix as px
+        from phoenix import Client
         
-        # Phoenix Client로 최근 스팬 가져오기
-        phoenix_client = px.Client()
+        # Phoenix Client 초기화 (base_url 명시)
+        print(f"[DEBUG] Connecting to Phoenix at: {config.phoenix_base_url}")
+        phoenix_client = Client(base_url=config.phoenix_base_url)
+        
+        # 최근 스팬 가져오기
         spans_df = phoenix_client.get_spans_dataframe(project_name=config.project_name)
         
         if spans_df is None or len(spans_df) == 0:
             result.error = "No spans found in Phoenix"
+            print(f"[DEBUG] {result.error}")
             return result
         
         # 가장 최근 LLM 스팬 찾기
@@ -137,6 +142,7 @@ def run_evaluation(
         result.error = f"ImportError: {e}"
     except Exception as e:
         logger.error(f"❌ 평가 실패: {e}")
+        print(f"[DEBUG] Evaluation error: {e}")
         result.error = str(e)
     
     return result
