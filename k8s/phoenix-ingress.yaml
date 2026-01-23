@@ -1,21 +1,21 @@
 ---
-# Phoenix NLB Service
-apiVersion: v1
-kind: Service
+# Phoenix VirtualService (Istio)
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
 metadata:
-  name: phoenix-nlb
-  namespace: default
-  annotations:
-    service.beta.kubernetes.io/aws-load-balancer-type: "external"
-    service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "ip"
-    service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
+  name: phoenix-vs
+  namespace: istio-system
 spec:
-  type: LoadBalancer
-  selector:
-    app: phoenix
-    component: server
-  ports:
-    - name: ui
-      port: 80
-      targetPort: 6006
-      protocol: TCP
+  hosts:
+    - phoenix.aws11.shop
+  gateways:
+    - main-gateway
+  http:
+    - match:
+        - uri:
+            prefix: /
+      route:
+        - destination:
+            host: phoenix-service.default.svc.cluster.local
+            port:
+              number: 6006
