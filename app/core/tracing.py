@@ -74,39 +74,18 @@ def init_tracing(config: TracingConfig) -> bool:
         return True
     
     try:
-        from opentelemetry.sdk.resources import Resource, SERVICE_NAME
-        from opentelemetry.sdk.trace.export import BatchSpanProcessor
-        from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+        # Phoenix OTEL 사용 (HTTP exporter)
+        from phoenix.otel import register
         
-        # 리소스 설정
-        resource = Resource.create({
-            SERVICE_NAME: config.project_name,
-            "service.version": "1.0.0",
-        })
-        
-        # TracerProvider 생성
-        tracer_provider = TracerProvider(
-            resource=resource,
-            sampler=TraceIdRatioBased(config.sample_rate)
+        # Phoenix에 트레이서 등록 (HTTP /v1/traces 엔드포인트 사용)
+        tracer_provider = register(
+            project_name=config.project_name,
+            endpoint=config.phoenix_endpoint,
         )
         
-        # Phoenix gRPC endpoint (4317 포트)
-        grpc_endpoint = config.phoenix_endpoint.replace(":6006", ":4317")
-        if ":4317" not in grpc_endpoint:
-            grpc_endpoint = grpc_endpoint.rstrip("/") + ":4317" if ":" not in grpc_endpoint.split("/")[-1] else grpc_endpoint
-        
-        # gRPC exporter 설정
-        otlp_exporter = OTLPSpanExporter(
-            endpoint=grpc_endpoint.replace("http://", "").replace("https://", ""),
-            insecure=True
-        )
-        tracer_provider.add_span_processor(BatchSpanProcessor(otlp_exporter))
-        
-        # 전역 TracerProvider 설정
-        trace.set_tracer_provider(tracer_provider)
         _tracer_provider = tracer_provider
         
-        print(f"✅ Phoenix gRPC endpoint: {grpc_endpoint}")
+        print(f"✅ Phoenix HTTP endpoint: {config.phoenix_endpoint}")
         
         # Bedrock Instrumentor 활성화
         try:
