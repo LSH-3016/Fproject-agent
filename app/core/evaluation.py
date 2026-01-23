@@ -71,10 +71,13 @@ def run_evaluation(
             llm_classify,
         )
         from phoenix.evals.models import BedrockModel
+        import boto3
         
-        # 평가용 모델 설정
+        # 평가용 모델 설정 - boto3 session으로 region 지정
         aws_region = os.getenv("AWS_REGION", "ap-northeast-2")
-        eval_model = BedrockModel(model_id=config.evaluator_model, aws_region=aws_region)
+        session = boto3.Session(region_name=aws_region)
+        client_bedrock = session.client("bedrock-runtime")
+        eval_model = BedrockModel(model_id=config.evaluator_model, client=client_bedrock)
         
         # Hallucination 평가
         if config.hallucination_check and reference_text:
