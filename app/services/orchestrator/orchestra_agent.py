@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 from strands import Agent
 
 from .question.agent import generate_auto_response
+from ...core.evaluation import run_evaluation, EvaluationConfig
 
 # Secrets Manager에서 설정 가져오기
 try:
@@ -194,6 +195,21 @@ def orchestrate_request(
                                     print(f"[DEBUG] Content extracted from tool result: {result_dict['content'][:100]}...")
                                     break
                     break
+
+    # 평가 실행 (answer 타입인 경우에만)
+    if result_dict.get("type") == "answer" and result_dict.get("content"):
+        try:
+            eval_result = run_evaluation(
+                input_text=user_input,
+                output_text=result_dict["content"],
+                reference_text=None  # RAG 컨텍스트가 있으면 여기에 전달
+            )
+            if eval_result.error:
+                print(f"[DEBUG] Evaluation skipped: {eval_result.error}")
+            else:
+                print(f"[DEBUG] Evaluation - Hallucination: {eval_result.hallucination_score}, Relevance: {eval_result.relevance_score}")
+        except Exception as e:
+            print(f"[DEBUG] Evaluation failed: {e}")
 
     print(f"[DEBUG] Final result - type: {result_dict.get('type')}, content length: {len(str(result_dict.get('content', '')))} chars")
     print(f"[DEBUG] ========== orchestrate_request 완료 ==========")
