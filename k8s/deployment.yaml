@@ -70,9 +70,9 @@ spec:
               value: "true"
             - name: EVALUATOR_MODEL
               value: "claude-sonnet-4-5"
-            # Jaeger 트레이싱 (Multi-Exporter)
-            - name: JAEGER_ENDPOINT
-              value: "jaeger-collector.istio-system.svc.cluster.local:4317"
+            # Jaeger 트레이싱 (비활성화 - 연결 문제로 응답 지연 발생)
+            # - name: JAEGER_ENDPOINT
+            #   value: "jaeger.istio-system.svc.cluster.local:4317"
           resources:
             requests:
               memory: "256Mi"
