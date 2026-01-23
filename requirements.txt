@@ -26,7 +26,7 @@ pydantic-settings>=2.1.0
 
 # Phoenix Monitoring (Arize Phoenix)
 arize-phoenix-otel>=0.6.0
-openinference-instrumentation-bedrock>=0.4.0
+openinference-instrumentation-bedrock>=0.1.30
 arize-phoenix-evals>=0.17.0
 
 # OpenTelemetry
