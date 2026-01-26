@@ -78,7 +78,7 @@ def generate_auto_response(question: str, user_id: str = None, current_date: str
     # 이 시점에서는 이미 모듈 로드 시 검증되었으므로 비어있을 수 없음
     if not kb_id:
         print(f"[ERROR] CRITICAL: KNOWLEDGE_BASE_ID가 런타임에 비어있습니다!")
-        return {"response": "Knowledge Base 설정 오류. 시스템 관리자에게 문의하세요."}
+        return {"response": "Knowledge Base 설정 오류. 시스템 관리자에게 문의하세요.", "reference": ""}
 
     try:
         # system prompt 구성
@@ -110,12 +110,19 @@ def generate_auto_response(question: str, user_id: str = None, current_date: str
         print(f"[DEBUG] Agent 응답 완료")
         print(f"[DEBUG] Response: {str(response)[:200]}...")
 
-        # tool_result 추출
+        # tool_result 추출 (retrieve 결과 = reference)
         tool_results = filter_tool_result(auto_response_agent)
         print(f"[DEBUG] Tool results count: {len(tool_results)}")
+        
+        # retrieve 결과에서 reference 텍스트 추출
+        reference_text = extract_reference_from_tool_results(tool_results)
+        print(f"[DEBUG] Reference text length: {len(reference_text)} chars")
 
-        # 결과 반환
-        result = {"response": str(response)}
+        # 결과 반환 (reference 포함)
+        result = {
+            "response": str(response),
+            "reference": reference_text
+        }
         print(f"[DEBUG] ========== generate_auto_response 완료 ==========")
         return result
         
@@ -125,7 +132,7 @@ def generate_auto_response(question: str, user_id: str = None, current_date: str
         print(f"[ERROR] Exception message: {str(e)}")
         import traceback
         traceback.print_exc()
-        return {"response": f"답변 생성 중 오류가 발생했습니다: {str(e)}"}
+        return {"response": f"답변 생성 중 오류가 발생했습니다: {str(e)}", "reference": ""}
 
 def filter_tool_result(agent: Agent) -> List:
     """
@@ -143,3 +150,45 @@ def filter_tool_result(agent: Agent) -> List:
             if "toolResult" in content:
                 tool_results.append(m["content"][0]["toolResult"])
     return tool_results
+
+
+def extract_reference_from_tool_results(tool_results: List) -> str:
+    """
+    retrieve tool 결과에서 reference 텍스트를 추출하는 함수
+    
+    Args:
+        tool_results: tool result 리스트
+        
+    Returns:
+        str: 검색된 문서 내용 (reference)
+    """
+    reference_parts = []
+    
+    for tool_result in tool_results:
+        try:
+            if isinstance(tool_result, dict):
+                content = tool_result.get("content", [])
+                if isinstance(content, list):
+                    for item in content:
+                        if isinstance(item, dict):
+                            # text 형태
+                            if "text" in item:
+                                reference_parts.append(item["text"])
+                            # json 형태
+                            elif "json" in item:
+                                json_data = item["json"]
+                                if isinstance(json_data, dict):
+                                    # retrieve 결과 구조에 따라 추출
+                                    if "text" in json_data:
+                                        reference_parts.append(json_data["text"])
+                                    elif "content" in json_data:
+                                        reference_parts.append(str(json_data["content"]))
+                                else:
+                                    reference_parts.append(str(json_data))
+                elif isinstance(content, str):
+                    reference_parts.append(content)
+        except Exception as e:
+            print(f"[DEBUG] Error extracting reference: {e}")
+            continue
+    
+    return "\n\n".join(reference_parts)
