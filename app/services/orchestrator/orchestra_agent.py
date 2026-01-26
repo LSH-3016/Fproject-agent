@@ -108,6 +108,7 @@ def orchestrate_request(
         result_dict = result
 
     # Tool 결과가 있고 type이 answer인 경우, content가 비어있으면 tool 결과로 채움
+    reference_text = None
     if tool_results and result_dict.get("type") == "answer":
         if not result_dict.get("content") or result_dict.get("content") == "":
             # generate_auto_response의 결과에서 response 추출
@@ -118,10 +119,28 @@ def orchestrate_request(
                         for item in tool_content:
                             if isinstance(item, dict) and "json" in item:
                                 json_data = item["json"]
-                                if isinstance(json_data, dict) and "response" in json_data:
-                                    result_dict["content"] = json_data["response"]
-                                    print(f"[DEBUG] Content extracted from tool result: {result_dict['content'][:100]}...")
-                                    break
+                                if isinstance(json_data, dict):
+                                    if "response" in json_data:
+                                        result_dict["content"] = json_data["response"]
+                                        print(f"[DEBUG] Content extracted from tool result: {result_dict['content'][:100]}...")
+                                    if "reference" in json_data:
+                                        reference_text = json_data["reference"]
+                                        print(f"[DEBUG] Reference extracted: {len(reference_text)} chars")
+                                break
+                    break
+        else:
+            # content가 있어도 reference는 추출
+            for tool_result in tool_results:
+                if isinstance(tool_result, dict) and "content" in tool_result:
+                    tool_content = tool_result["content"]
+                    if isinstance(tool_content, list):
+                        for item in tool_content:
+                            if isinstance(item, dict) and "json" in item:
+                                json_data = item["json"]
+                                if isinstance(json_data, dict) and "reference" in json_data:
+                                    reference_text = json_data["reference"]
+                                    print(f"[DEBUG] Reference extracted: {len(reference_text)} chars")
+                                break
                     break
 
     # 평가 실행 (answer 타입인 경우에만)
@@ -130,7 +149,7 @@ def orchestrate_request(
             eval_result = run_evaluation(
                 input_text=user_input,
                 output_text=result_dict["content"],
-                reference_text=None  # RAG 컨텍스트가 있으면 여기에 전달
+                reference_text=reference_text  # RAG 검색 결과 전달
             )
             if eval_result.error:
                 print(f"[DEBUG] Evaluation skipped: {eval_result.error}")
