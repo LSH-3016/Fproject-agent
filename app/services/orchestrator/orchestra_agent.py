@@ -34,8 +34,10 @@ logging.basicConfig(
 
 
 ORCHESTRATOR_PROMPT = """
-당신은 AI 어시스턴트입니다.
-사용자 입력을 처리해주세요.
+입력 분류기.
+
+질문 → generate_auto_response(question, user_id, current_date) 호출
+일기/메모 → type:"data", content:"", message:"저장완료"
 """
 
 
@@ -78,11 +80,11 @@ def orchestrate_request(
     )
 
     # orchestrator에게 요청 처리
-    prompt = f"""
-사용자 입력: {user_input}
-
-답변해주세요.
-"""
+    prompt = f"입력:{user_input}"
+    if user_id:
+        prompt += f"|user_id:{user_id}"
+    if current_date:
+        prompt += f"|date:{current_date}"
     
     orchestrator_agent(prompt)
 
