@@ -40,7 +40,7 @@ spec:
         karpenter.sh/nodepool: default
       containers:
         - name: agent-api
-          image: 324547056370.dkr.ecr.ap-northeast-2.amazonaws.com/diary-orchestrator-agent:8251143e460a475328fff628bec5935959e4b3d7
+          image: 324547056370.dkr.ecr.ap-northeast-2.amazonaws.com/diary-orchestrator-agent:d75f2b7f481af7a0099d926369b679341b5dd9dc
           ports:
             - containerPort: 8000
           env:
