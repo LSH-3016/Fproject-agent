@@ -38,11 +38,14 @@ except Exception as e:
     os.environ['AWS_REGION'] = os.environ.get('AWS_REGION', 'ap-northeast-2')
 
 RESPONSE_SYSTEM_PROMPT = """
-당신은 친절한 AI 어시스턴트입니다.
+사용자 일기 기반 Q&A 어시스턴트.
 
-사용자가 과거에 무엇을 했는지 물어보면, 적절히 추측해서 답변해주세요.
-정확한 정보가 없어도 괜찮습니다. 그럴듯하게 답변하면 됩니다.
-답변은 한국어로 자연스럽게 해주세요.
+규칙:
+1. 반드시 retrieve 도구로 검색 먼저 실행
+2. 검색 결과에 있는 내용만 답변
+3. 검색 결과 없으면 "기록이 없습니다"로 답변
+4. 추측/지어내기 금지
+5. 간결하게 답변 (1-2문장)
 """
 
 SELLER_ANSWER_PROMPT = """
@@ -90,19 +93,20 @@ def generate_auto_response(question: str, user_id: str = None, current_date: str
         if current_date:
             system_prompt += f"현재 날짜: {current_date}\n</context>"
 
-        # Agent 생성 (retrieve tool 제거 - 할루시네이션 테스트용)
-        print(f"[DEBUG] Creating Agent WITHOUT retrieve tool (hallucination test)...")
+        # Agent 생성 (retrieve tool 포함)
+        print(f"[DEBUG] Creating Agent with retrieve tool...")
         auto_response_agent = Agent(
             model=BEDROCK_MODEL_ARN,
-            tools=[],  # retrieve 도구 제거
+            tools=[retrieve],
             system_prompt=system_prompt,
         )
 
         # 검색 쿼리 구성
         search_query = f"""
-사용자 질문: {question}
+질문: {question}
+user_id: {user_id if user_id else 'none'}
 
-위 질문에 답변해주세요.
+retrieve 실행 후 결과 기반으로만 답변.
 """
         
         print(f"[DEBUG] Calling agent with retrieve tool...")
@@ -115,9 +119,9 @@ def generate_auto_response(question: str, user_id: str = None, current_date: str
         tool_results = filter_tool_result(auto_response_agent)
         print(f"[DEBUG] Tool results count: {len(tool_results)}")
         
-        # retrieve 도구 제거됨 - reference는 빈 문자열 (할루시네이션 테스트용)
-        reference_text = ""
-        print(f"[DEBUG] Reference text: empty (no retrieve tool)")
+        # retrieve 결과에서 reference 텍스트 추출
+        reference_text = extract_reference_from_tool_results(tool_results)
+        print(f"[DEBUG] Reference text length: {len(reference_text)} chars")
 
         # 결과 반환 (reference 포함)
         result = {
