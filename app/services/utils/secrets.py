@@ -10,16 +10,17 @@ from botocore.exceptions import ClientError
 def get_secret(secret_name: str, region_name: str = None) -> dict:
     """
     AWS Secrets Manager에서 시크릿을 가져옵니다.
+    Plaintext JSON과 Key-Value 방식 모두 지원합니다.
     
     Args:
         secret_name: Secrets Manager의 시크릿 이름
-        region_name: AWS 리전 (기본값: 환경변수 또는 us-east-1)
+        region_name: AWS 리전 (기본값: 환경변수 또는 ap-northeast-2)
     
     Returns:
         시크릿 값을 담은 딕셔너리
     """
     if region_name is None:
-        region_name = os.environ.get('AWS_REGION', 'us-east-1')
+        region_name = os.environ.get('AWS_REGION', 'ap-northeast-2')
     
     # Secrets Manager 클라이언트 생성
     session = boto3.session.Session()
@@ -64,14 +65,14 @@ def get_secret(secret_name: str, region_name: str = None) -> dict:
         
         try:
             secret_dict = json.loads(secret_string)
-            print(f"[Secrets] Successfully parsed JSON with {len(secret_dict)} keys")
+            print(f"[Secrets] Successfully parsed as JSON with {len(secret_dict)} keys")
             return secret_dict
-        except json.JSONDecodeError as e:
-            print(f"❌ JSON 파싱 실패: {str(e)}")
-            print(f"❌ Secret string: {secret_string}")
-            print(f"❌ First 50 chars: {repr(secret_string[:50])}")
-            print(f"❌ Last 50 chars: {repr(secret_string[-50:])}")
-            raise ValueError(f"Secret '{secret_name}'의 JSON 파싱 실패: {str(e)}")
+        except json.JSONDecodeError:
+            # JSON 파싱 실패 시 Key-Value 형식으로 간주
+            print(f"[Secrets] Not a JSON format, treating as Key-Value pairs")
+            # Key-Value 형식은 이미 dict로 반환됨
+            # AWS SDK가 자동으로 파싱해줌
+            return json.loads(secret_string)
     else:
         # 바이너리 시크릿의 경우
         import base64
@@ -91,8 +92,8 @@ def get_config() -> dict:
         Exception: Secrets Manager에서 설정을 가져올 수 없는 경우
     """
     # Secret 이름 (환경변수 또는 기본값)
-    secret_name = os.environ.get('SECRET_NAME', 'agent-core-secret')
-    region_name = os.environ.get('AWS_REGION', 'us-east-1')
+    secret_name = os.environ.get('SECRET_NAME', 'agent-secret')
+    region_name = os.environ.get('AWS_REGION', 'ap-northeast-2')
     
     config = get_secret(secret_name, region_name)
     print(f"✅ Secrets Manager에서 설정을 가져왔습니다: {secret_name}")

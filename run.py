@@ -13,6 +13,7 @@ if __name__ == "__main__":
     print("Endpoints:")
     print("  - GET  /agent/health")
     print("  - POST /agent (질문 답변 또는 데이터 저장)")
+    print("  - POST /agent/question (Knowledge Base 검색 - orchestrator 우회)")
     print("  - POST /agent/image (이미지 생성)")
     print("  - POST /agent/report (주간 리포트)")
     print("  - POST /agent/summarize (일기 생성)")

@@ -1,4 +1,12 @@
 apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: diary-agent-sa
+  namespace: default
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::324547056370:role/DiaryOrchestratorAgentRole
+---
+apiVersion: v1
 kind: Service
 metadata:
   name: agent-api-service
@@ -27,9 +35,12 @@ spec:
       labels:
         app: agent-api
     spec:
+      serviceAccountName: diary-agent-sa
+      nodeSelector:
+        karpenter.sh/nodepool: default
       containers:
         - name: agent-api
-          image: 324547056370.dkr.ecr.us-east-1.amazonaws.com/diary-orchestrator-agent:8d6753ceb371e0b9359b9ab01d9ea1bec5a5fc21
+          image: 324547056370.dkr.ecr.ap-northeast-2.amazonaws.com/diary-orchestrator-agent:8251143e460a475328fff628bec5935959e4b3d7
           ports:
             - containerPort: 8000
           env:
@@ -38,18 +49,36 @@ spec:
             - name: HOST
               value: "0.0.0.0"
             - name: AWS_REGION
-              value: "us-east-1"
+              value: "ap-northeast-2"
+            - name: SECRET_NAME
+              value: "agent-secret"
             - name: ALLOWED_ORIGINS
-              value: "https://www.aws11.shop,https://aws11.shop,https://api.aws11.shop"
+              value: "https://www.aws11.shop,https://aws11.shop,https://web.aws11.shop,https://api.aws11.shop"
             - name: DEBUG
               value: "False"
+            # Phoenix Tracing 설정
+            - name: PHOENIX_ENDPOINT
+              value: "http://phoenix-service:6006"
+            - name: PHOENIX_BASE_URL
+              value: "http://phoenix-service:6006"
+            - name: PHOENIX_PROJECT_NAME
+              value: "diary-agent"
+            - name: TRACING_ENABLED
+              value: "true"
+            - name: TRACE_SAMPLE_RATE
+              value: "1.0"
+            # Phoenix Evaluation 설정
+            - name: EVALUATION_ENABLED
+              value: "true"
+            - name: EVALUATOR_MODEL
+              value: "anthropic.claude-3-haiku-20240307-v1:0"
           resources:
             requests:
+              memory: "256Mi"
+              cpu: "125m"
+            limits:
               memory: "512Mi"
               cpu: "250m"
-            limits:
-              memory: "1Gi"
-              cpu: "500m"
           livenessProbe:
             httpGet:
               path: /agent/health

@@ -5,7 +5,19 @@ from typing import Any, Dict, List, Optional
 
 from strands import Agent
 
-os.environ['AWS_REGION'] = 'us-east-1'
+# Secrets Manager에서 설정 가져오기
+try:
+    import sys
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+    from app.services.utils.secrets import get_config
+    config = get_config()
+    BEDROCK_MODEL_ARN = config.get('BEDROCK_MODEL_ARN')
+    if not BEDROCK_MODEL_ARN:
+        raise ValueError("BEDROCK_MODEL_ARN이 Secrets Manager에 설정되지 않았습니다.")
+    print(f"✅ Summarize Agent - Model ARN: {BEDROCK_MODEL_ARN}")
+except Exception as e:
+    print(f"❌ ERROR: Summarize Agent 설정 로드 실패: {str(e)}")
+    raise
 
 summarize_SYSTEM_PROMPT = """
     당신은 일기를 작성하는 AI 어시스턴트입니다.
@@ -60,6 +72,7 @@ def generate_auto_summarize(
 
     # 각 요청마다 새로운 Agent 생성
     auto_response_agent = Agent(
+        model=BEDROCK_MODEL_ARN,
         system_prompt=summarize_SYSTEM_PROMPT
         + f"""
         SELLER_ANSWER_PROMPT: {SELLER_ANSWER_PROMPT}

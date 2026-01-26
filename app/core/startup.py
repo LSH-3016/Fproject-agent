@@ -21,7 +21,7 @@ async def startup_handler():
         print(f"✅ 설정 로드 완료")
         print(f"   - AWS Region: {config.get('AWS_REGION')}")
         print(f"   - Knowledge Base ID: {config.get('KNOWLEDGE_BASE_ID', 'N/A')}")
-        print(f"   - Claude Model: {config.get('BEDROCK_CLAUDE_MODEL_ID', 'N/A')[:50]}...")
+        print(f"   - Claude Model ARN: {config.get('BEDROCK_MODEL_ARN', 'N/A')[:80]}...")
         print(f"   - Nova Canvas Model: {config.get('BEDROCK_NOVA_CANVAS_MODEL_ID', 'N/A')}")
         print(f"   - S3 Bucket: {config.get('KNOWLEDGE_BASE_BUCKET', 'N/A')}")
     except Exception as e:
