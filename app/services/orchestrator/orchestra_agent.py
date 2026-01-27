@@ -179,19 +179,41 @@ def _is_likely_question(text: str) -> bool:
     """
     텍스트가 질문인지 빠르게 판단하는 사전 필터링 (LLM 호출 없이)
     """
-    question_patterns = [
-        '?', '했어?', '뭐야', '뭐에요', '뭔가요',
-        '언제', '어디', '누가', '누구', '왜', '어떻게', '어떤',
-        '몇', '얼마', '알려줘', '알려주세요', '가르쳐',
-        '있어?', '있나요', '있을까', '없어?', '없나요',
-        '할까', '할까요', '해줘', '해주세요', '해줄래',
-        '볼까', '볼래', '먹을까', '갈까',
-        '맞아?', '맞나요', '아니야?', '아닌가요',
-        '인가요', '인가', '일까', '일까요',
-        '줄래', '줄까', '줄 수', '수 있어', '수 있나요',
-        '뭘', '뭐를', '무엇', '무슨', '뭐했', '뭐 했',
+    # 물음표가 있으면 질문
+    if '?' in text:
+        return True
+    
+    # 문장 끝 패턴 (공백이나 문장 끝에서만 매칭)
+    import re
+    end_patterns = [
+        r'했어\s*$', r'뭐야\s*$', r'뭐에요\s*$', r'뭔가요\s*$',
+        r'있어\s*$', r'있나요\s*$', r'있을까\s*$', r'없어\s*$', r'없나요\s*$',
+        r'할까\s*$', r'할까요\s*$', r'볼까\s*$', r'볼래\s*$', r'먹을까\s*$', r'갈까\s*$',
+        r'맞아\s*$', r'맞나요\s*$', r'아니야\s*$', r'아닌가요\s*$',
+        r'인가요\s*$', r'인가\s*$', r'일까\s*$', r'일까요\s*$',
+        r'줄래\s*$', r'줄까\s*$',
     ]
-    return any(pattern in text for pattern in question_patterns)
+    
+    for pattern in end_patterns:
+        if re.search(pattern, text):
+            return True
+    
+    # 문장 시작/중간 패턴 (단어 경계 고려)
+    word_patterns = [
+        r'\b언제\b', r'\b어디\b', r'\b누가\b', r'\b누구\b', r'\b왜\b', 
+        r'\b어떻게\b', r'\b어떤\b', r'\b몇\b', r'\b얼마\b',
+        r'\b무엇\b', r'\b무슨\b',
+        r'알려줘', r'알려주세요', r'가르쳐',
+        r'해줘', r'해주세요', r'해줄래',
+        r'줄 수', r'수 있어', r'수 있나요',
+        r'뭘', r'뭐를', r'뭐했', r'뭐 했',
+    ]
+    
+    for pattern in word_patterns:
+        if re.search(pattern, text):
+            return True
+    
+    return False
 
 
 def orchestrate_request(
