@@ -139,11 +139,11 @@ def generate_auto_response(question: str, user_id: str = None, current_date: str
             system_prompt=system_prompt,
         )
 
-        # 검색 쿼리 구성 - 날짜와 질문을 함께 포함
+        # 검색 쿼리 구성 - 질문을 검색에 적합한 키워드로 변환
         search_parts = []
         
         if current_date:
-            # 날짜를 여러 형식으로 추가 (2026-01-26, 1월 26일 등)
+            # 날짜를 여러 형식으로 추가
             search_parts.append(current_date)
             try:
                 from datetime import datetime
@@ -152,6 +152,26 @@ def generate_auto_response(question: str, user_id: str = None, current_date: str
             except:
                 pass
         
+        # 질문에서 핵심 키워드 추출 및 확장
+        question_lower = question.lower()
+        
+        # 음식 관련 질문
+        if any(word in question_lower for word in ['먹', '음식', '식사', '메뉴', '점심', '저녁', '아침']):
+            search_parts.extend(['먹', '음식', '식사', '메뉴', '점심', '저녁', '아침'])
+        
+        # 시간 관련 질문
+        if any(word in question_lower for word in ['시간', '몇시', '언제', '일어', '출근', '퇴근']):
+            search_parts.extend(['시간', '시', '일어', '출근', '퇴근'])
+        
+        # 장소 관련 질문
+        if any(word in question_lower for word in ['어디', '장소', '갔', '방문']):
+            search_parts.extend(['어디', '장소', '갔', '방문'])
+        
+        # 사람 관련 질문
+        if any(word in question_lower for word in ['누구', '누가', '사람', '만났']):
+            search_parts.extend(['누구', '사람', '만났'])
+        
+        # 원본 질문도 포함
         search_parts.append(question)
         
         search_query_text = " ".join(search_parts)
@@ -159,15 +179,16 @@ def generate_auto_response(question: str, user_id: str = None, current_date: str
         search_query = f"""질문: {question}
 
 반드시 retrieve 도구를 사용하여 지식베이스를 검색하세요.
+
 검색 쿼리: "{search_query_text}"
 numberOfResults: 10
 
-검색 결과를 바탕으로만 답변하세요.
-검색 결과가 없거나 질문과 관련된 정보가 없으면 "해당 정보를 찾을 수 없습니다"라고 답변하세요.
+검색된 일기 내용을 분석하여 질문에 답변하세요.
+일기에 해당 정보가 없으면 "일기에 기록되지 않았습니다"라고 답변하세요.
 """
         
-        print(f"[DEBUG] Search query text: {search_query_text}")
-        print(f"[DEBUG] Full search query: {search_query[:200]}...")
+        print(f"[DEBUG] Original question: {question}")
+        print(f"[DEBUG] Expanded search query: {search_query_text}")
         print(f"[DEBUG] Calling agent with retrieve tool...")
         response = auto_response_agent(search_query)
         
