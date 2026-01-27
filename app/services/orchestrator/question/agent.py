@@ -225,6 +225,7 @@ numberOfResults: 10
         if answer_content:
             try:
                 from app.core.evaluation import run_evaluation
+                print(f"[DEBUG] Starting evaluation...")
                 eval_result = run_evaluation(
                     input_text=question,
                     output_text=answer_content,
@@ -235,7 +236,8 @@ numberOfResults: 10
                 else:
                     print(f"[DEBUG] Evaluation completed - Relevance: {eval_result.relevance_label}, Hallucination: {eval_result.hallucination_label}")
             except Exception as e:
-                print(f"[DEBUG] Evaluation failed: {e}")
+                print(f"[WARN] Evaluation failed (non-critical): {e}")
+                # Evaluation 실패는 무시하고 계속 진행
         
         print(f"[DEBUG] ========== generate_auto_response 완료 ==========")
         return result

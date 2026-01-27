@@ -69,11 +69,22 @@ def run_evaluation(
         
         # Phoenix Client 초기화 (환경변수 PHOENIX_BASE_URL 사용)
         # deployment.yaml에서 PHOENIX_BASE_URL=http://phoenix-service:6006 설정됨
-        print(f"[DEBUG] Connecting to Phoenix (PHOENIX_BASE_URL env var)")
-        phoenix_client = px.Client()
+        print(f"[DEBUG] Connecting to Phoenix at {config.phoenix_base_url}")
+        
+        try:
+            phoenix_client = px.Client(endpoint=config.phoenix_base_url)
+        except Exception as conn_error:
+            result.error = f"Phoenix connection failed: {conn_error}"
+            print(f"[WARN] {result.error}")
+            return result
         
         # 최근 스팬 가져오기
-        spans_df = phoenix_client.get_spans_dataframe(project_name=config.project_name)
+        try:
+            spans_df = phoenix_client.get_spans_dataframe(project_name=config.project_name)
+        except Exception as span_error:
+            result.error = f"Failed to get spans: {span_error}"
+            print(f"[WARN] {result.error}")
+            return result
         
         if spans_df is None or len(spans_df) == 0:
             result.error = "No spans found in Phoenix"
