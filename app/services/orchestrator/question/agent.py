@@ -86,9 +86,10 @@ def secure_retrieve(
     print(f"[SECURITY] secure_retrieve 호출 - user_id 필터 강제 적용: {user_id}")
     
     # 코드 레벨에서 user_id 필터 강제 적용 - LLM이 변경 불가능
+    # S3 경로에 user_id가 포함되어 있으므로 stringContains로 필터링
     retrieve_filter = {
-        "equals": {
-            "key": "user_id",
+        "stringContains": {
+            "key": "x-amz-bedrock-kb-source-uri",
             "value": user_id
         }
     }
